@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OT Planning System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+        body { font-family: 'Prompt', sans-serif; background-color: #f4f7f6; color: #333; }
+        .spa-view { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .spa-view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); border: none; }
+        .navbar-custom { background: linear-gradient(135deg, #0d6efd, #0dcaf0); }
+        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .table-container::-webkit-scrollbar { height: 10px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px;}
+        .table-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 8px;}
+        .table-ot { margin-bottom: 0; white-space: nowrap; border-collapse: separate; border-spacing: 0; min-width: max-content; }
+        .table-ot th, .table-ot td { border-right: 1px solid #e9ecef; border-bottom: 1px solid #e9ecef; text-align: center; vertical-align: middle; padding: 6px 10px; }
+        
+        /* Sticky Header */
+        .table-ot thead th { background-color: #f8f9fa; color: #495057; font-weight: 600; position: sticky; top: 0; z-index: 10; border-top: 1px solid #e9ecef; }
+        .table-ot thead th[class*="sticky-col-"] { z-index: 15; } 
+        .table-ot thead th[class*="total-col-"] { z-index: 15; }
+        
+        /* Sticky Left Columns (Admin) */
+        .sticky-col-1 { position: sticky; left: 0; background-color: #f8f9fa; z-index: 5; border-right: 1px solid #dee2e6; width: 50px; min-width: 50px; }
+        .sticky-col-2 { position: sticky; left: 50px; background-color: #fff; z-index: 5; width: 90px; min-width: 90px; }
+        .sticky-col-3 { position: sticky; left: 140px; background-color: #fff; z-index: 5; width: 220px; min-width: 220px; }
+        .sticky-col-4 { position: sticky; left: 360px; background-color: #fff; z-index: 5; border-right: 2px solid #adb5bd !important; width: 140px; min-width: 140px; }
+        
+        .bg-weekend { background-color: #fff3cd !important; }
+        .bg-holiday { background-color: #f8d7da !important; color: #842029; font-weight: bold; }
+        .text-holiday { color: #dc3545; font-size: 0.7em; display: block; }
+        .ot-cell { width: 45px; min-width: 45px; }
+        
+        /* Total Columns */
+        .total-col-15 { background-color: #eaf1f8; font-weight: bold; position: sticky; right: 120px; border-left: 2px solid #adb5bd !important; z-index: 5; width: 60px; min-width: 60px; color: #0d6efd;}
+        .total-col-20 { background-color: #eaf8ea; font-weight: bold; position: sticky; right: 60px; z-index: 5; border-left: 1px solid #dee2e6; width: 60px; min-width: 60px; color: #198754;}
+        .total-col-30 { background-color: #f8eaeb; font-weight: bold; position: sticky; right: 0; z-index: 5; border-left: 1px solid #dee2e6; width: 60px; min-width: 60px; color: #dc3545;}
+        
+        .cursor-pointer { cursor: pointer; transition: transform 0.2s; }
+        .cursor-pointer:hover { transform: translateY(-5px); }
+        
+        /* Input */
+        .ot-input { width: 40px; min-width: 40px; text-align: center; margin: 0 auto; border: 1px solid #ced4da; border-radius: 4px; padding: 2px; }
+        .ot-input:focus { outline: none; border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); background-color: #fffbcc; }
+        .ot-input:disabled { background-color: #e9ecef; cursor: not-allowed; border-color: transparent; }
+        .ot-input::-webkit-outer-spin-button, .ot-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .ot-input[type=number] { -moz-appearance: textfield; }
+        .status-badge { font-size: 0.8em; padding: 4px 8px; border-radius: 12px; }
+
+        /* ปลดล็อคคอลัมน์ซ้ายขวาให้หน้า User เลื่อนง่ายๆ */
+        #userSpreadsheetTable [class*="sticky-col-"] { left: auto !important; }
+        #userSpreadsheetTable [class*="total-col-"] { right: auto !important; }
+        #userSpreadsheetTable tbody [class*="sticky-col-"], #userSpreadsheetTable tbody [class*="total-col-"] { z-index: 1 !important; }
+        #userSpreadsheetTable thead [class*="sticky-col-"], #userSpreadsheetTable thead [class*="total-col-"] { z-index: 10 !important; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold" href="#" onclick="switchView('landing-view')"><i class="fa-solid fa-clock me-2"></i>OT Planning TOPAZ-BKK1</a>
+            <div class="d-flex" id="nav-actions"></div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 pb-5">
+
+        <!-- 1. LANDING VIEW -->
+        <div id="landing-view" class="spa-view active">
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-10 text-center">
+                    <h2 class="fw-bold mb-4">ระบบจัดการและวางแผนล่วงเวลา (OT)</h2>
+                    <p class="text-muted mb-5">กรุณาเลือกรูปแบบการเข้าสู่ระบบ</p>
+                    <div class="row g-4 justify-content-center">
+                        <div class="col-md-4">
+                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('user-login-view')">
+                                <div class="card-body"><i class="fa-solid fa-right-to-bracket fa-3x text-success mb-3"></i><h4>เข้าสู่ระบบพนักงาน</h4><button class="btn btn-outline-success mt-2">เข้าสู่ระบบ</button></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('register-view')">
+                                <div class="card-body"><i class="fa-solid fa-user-plus fa-3x text-primary mb-3"></i><h4>สมัครสมาชิก</h4><button class="btn btn-outline-primary mt-2">ลงทะเบียน</button></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('admin-login-view')">
+                                <div class="card-body"><i class="fa-solid fa-user-shield fa-3x text-info mb-3"></i><h4>ผู้ดูแลระบบ</h4><button class="btn btn-outline-info mt-2">Admin Login</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. REGISTER VIEW -->
+        <div id="register-view" class="spa-view">
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-8 col-lg-6">
+                    <div class="card glass-card p-4">
+                        <div class="text-center mb-4"><h3 class="fw-bold"><i class="fa-solid fa-address-card text-primary me-2"></i>ลงทะเบียนพนักงาน</h3></div>
+                        <form id="registerForm" onsubmit="handleRegister(event)">
+                            <div class="row g-3">
+                                <div class="col-md-6"><input type="text" class="form-control" id="regEmpId" required placeholder="รหัสพนักงาน (ID)"></div>
+                                <div class="col-md-6"><input type="text" class="form-control" id="regName" required placeholder="ชื่อ-สกุล"></div>
+                                <div class="col-md-12">
+                                    <select class="form-select" id="regPosition" required>
+                                        <option value="" selected disabled>-- เลือกตำแหน่งของท่าน --</option>
+                                        <option value="Engineer EE">Engineer EE</option><option value="Bim">Bim</option><option value="CAD">CAD</option><option value="Foreman">Foreman</option>
+                                        <option value="Safety">Safety</option><option value="Admin">Admin</option><option value="Document Control">Document Control</option>
+                                        <option value="Maid">Maid</option><option value="Driver">Driver</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6"><input type="tel" class="form-control" id="regPhone" required placeholder="เบอร์โทรศัพท์"></div>
+                                <div class="col-md-6"><input type="email" class="form-control" id="regEmail" required placeholder="อีเมล"></div>
+                                <div class="col-12"><input type="password" class="form-control" id="regPassword" required placeholder="รหัสผ่าน (Password)"></div>
+                                <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100" id="btnRegister">สมัครสมาชิก</button><button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3. USER LOGIN VIEW -->
+        <div id="user-login-view" class="spa-view">
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-4">
+                    <div class="card glass-card p-4">
+                        <div class="text-center mb-4"><i class="fa-solid fa-user-circle fa-3x text-success mb-3"></i><h3 class="fw-bold">เข้าสู่ระบบพนักงาน</h3></div>
+                        <form id="userLoginForm" onsubmit="handleUserLogin(event)">
+                            <div class="mb-3"><input type="text" class="form-control" id="userId" required placeholder="รหัสพนักงาน (ID)"></div>
+                            <div class="mb-3"><input type="password" class="form-control" id="userPass" required placeholder="รหัสผ่าน (Password)"></div>
+                            <button type="submit" class="btn btn-success w-100" id="btnUserLogin">เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i></button>
+                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ADMIN LOGIN VIEW -->
+        <div id="admin-login-view" class="spa-view">
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-4">
+                    <div class="card glass-card p-4">
+                        <div class="text-center mb-4"><i class="fa-solid fa-lock fa-3x text-secondary mb-3"></i><h3 class="fw-bold">Admin Login</h3></div>
+                        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+                            <div class="mb-3"><input type="text" class="form-control" id="adminId" required placeholder="Admin ID"></div>
+                            <div class="mb-4"><input type="password" class="form-control" id="adminPass" required placeholder="Password"></div>
+                            <button type="submit" class="btn btn-dark w-100">เข้าสู่ระบบจัดการ</button>
+                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 6. USER DASHBOARD VIEW -->
+        <!-- ============================================== -->
+        <div id="user-dashboard-view" class="spa-view">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-0 text-success"><i class="fa-solid fa-person-digging me-2"></i>หน้าวางแผน OT ของฉัน</h3>
+                    <p class="text-muted mb-0 mt-1">ยินดีต้อนรับ: <strong id="displayUserName" class="text-primary"></strong> (รหัส: <span id="displayUserId"></span>)</p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-info px-3" onclick="initUserData()"><i class="fa-solid fa-rotate-right me-1"></i> รีเฟรชสถานะ</button>
+                    <button class="btn btn-primary px-4" id="btnSaveUserOT" onclick="saveUserOT()"><i class="fa-solid fa-save me-1"></i> ส่งแผน OT</button>
+                </div>
+            </div>
+
+            <div class="card glass-card p-3 mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">เลือกรอบบิล (เดือน/ปี)</label>
+                        <input type="month" class="form-control" id="userMonthSelector" onchange="changeUserPeriod()">
+                    </div>
+                    <div class="col-md-9 text-end mt-auto">
+                        <div class="d-inline-flex align-items-center me-3"><span class="badge bg-weekend text-dark border me-1">&nbsp;&nbsp;</span> เสาร์-อาทิตย์</div>
+                        <div class="d-inline-flex align-items-center"><span class="badge bg-holiday text-dark border me-1">&nbsp;&nbsp;</span> วันหยุดพิเศษ</div>
+                        <p class="mb-0 text-muted small mt-2">รอบตัดวิก: <strong id="userPeriodDisplay"></strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table table-ot table-hover" id="userSpreadsheetTable">
+                    <thead id="userSsHeader"></thead>
+                    <tbody id="userSsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 7. ADMIN DASHBOARD VIEW -->
+        <!-- ============================================== -->
+        <div id="admin-dashboard" class="spa-view">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-calendar-check me-2"></i>ตารางแผนปฏิบัติงานล่วงเวลา (OT) ภาพรวม</h3>
+                    <p class="text-muted mb-0 mt-1">รอบตัดวิก: <strong id="periodDisplay"></strong></p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-primary" onclick="initAdminData()"><i class="fa-solid fa-rotate-right me-1"></i> ดึงข้อมูลล่าสุด</button>
+                    <button class="btn btn-outline-dark" onclick="saveSortOrder()"><i class="fa-solid fa-sort-amount-down"></i> บันทึกลำดับ</button>
+                    <button class="btn btn-success" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export Excel</button>
+                </div>
+            </div>
+            
+            <div class="card glass-card p-3 mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">เลือกรอบบิล (เดือน/ปี)</label>
+                        <input type="month" class="form-control" id="monthSelector" onchange="changeAdminPeriod()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">ค้นหา (รหัส/ชื่อ)</label>
+                        <input type="text" class="form-control" id="searchEmp" placeholder="🔍 ค้นหารหัส หรือ ชื่อ..." onkeyup="filterSpreadsheet()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">สถานะอนุมัติ</label>
+                        <select class="form-select" id="statusFilter" onchange="filterSpreadsheet()">
+                            <option value="all">ทุกสถานะ</option>
+                            <option value="Pending">รอพิจารณา (Pending)</option>
+                            <option value="Approved">อนุมัติแล้ว (Approved)</option>
+                            <option value="Not Approve">ไม่อนุมัติ (Not Approve)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end mt-auto">
+                        <div class="d-inline-flex align-items-center me-2"><span class="badge bg-weekend text-dark border me-1">&nbsp;&nbsp;</span> วันหยุด</div>
+                        <div class="d-inline-flex align-items-center"><span class="badge bg-holiday text-dark border me-1">&nbsp;&nbsp;</span> นักขัตฤกษ์</div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-ot table-hover" id="spreadsheetTable">
+                    <thead id="ssHeader"></thead>
+                    <tbody id="ssBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const IS_GAS = typeof google !== 'undefined' && google.script;
+        const specialHolidays = { '2025-12-10': 'วันรัฐธรรมนูญ', '2025-12-31': 'วันสิ้นปี', '2026-01-01': 'วันขึ้นปีใหม่', '2026-04-13': 'วันสงกรานต์', '2026-04-14': 'วันสงกรานต์' };
+        
+        let currentUser = null; 
+        
+        function getCurrentPeriodMonthValue() {
+            const today = new Date();
+            let y = today.getFullYear();
+            let m = today.getMonth() + 1;
+            if (today.getDate() < 10) { m -= 1; if (m === 0) { m = 12; y -= 1; } }
+            return `${y}-${String(m).padStart(2, '0')}`;
+        }
+        
+        // Mock DB สำหรับ Preview
+        let globalUsers = []; 
+        let monthlyDataStore = {};
+        let monthlyData = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentMonthVal = getCurrentPeriodMonthValue();
+            document.getElementById('userMonthSelector').value = currentMonthVal;
+            document.getElementById('monthSelector').value = currentMonthVal;
+        });
+
+        function switchView(viewId) {
+            document.querySelectorAll('.spa-view').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            const navActions = document.getElementById('nav-actions');
+            if(viewId === 'admin-dashboard' || viewId === 'user-dashboard-view') {
+                navActions.innerHTML = `<button class="btn btn-sm btn-danger" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> ออกจากระบบ</button>`;
+                if(viewId === 'admin-dashboard') initAdminData(); 
+                if(viewId === 'user-dashboard-view') initUserData(); 
+            } else { navActions.innerHTML = ''; }
+        }
+
+        function logout() { currentUser = null; switchView('landing-view'); }
+
+        // === ดึงข้อมูลลงทะเบียนให้ครบทั้ง 6 ช่อง ===
+        function handleRegister(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnRegister');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+            btn.disabled = true;
+
+            const data = {
+                empId: String(document.getElementById('regEmpId').value), 
+                name: document.getElementById('regName').value,
+                position: document.getElementById('regPosition').value,
+                phone: document.getElementById('regPhone').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value
+            };
+
+            if (IS_GAS) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        btn.innerHTML = 'สมัครสมาชิก'; btn.disabled = false;
+                        if(res.success) {
+                            Swal.fire('สำเร็จ!', res.message, 'success').then(() => {
+                                document.getElementById('registerForm').reset();
+                                switchView('user-login-view');
+                            });
+                        } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    })
+                    .registerUser(data);
+            } else {
+                setTimeout(() => {
+                    btn.innerHTML = 'สมัครสมาชิก'; btn.disabled = false;
+                    globalUsers.push({ id: data.empId, name: data.name, pos: data.position, order: globalUsers.length + 1 });
+                    Swal.fire('สำเร็จ', 'ลงทะเบียนสำเร็จ (ในโหมดพรีวิว) ทดลอง Login ได้เลยครับ', 'success').then(() => switchView('user-login-view'));
+                }, 500);
+            }
+        }
+
+        function handleUserLogin(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnUserLogin');
+            const id = String(document.getElementById('userId').value); 
+            const pass = document.getElementById('userPass').value;
+            
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบ...';
+            btn.disabled = true;
+
+            if (IS_GAS) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        btn.innerHTML = 'เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i>'; btn.disabled = false;
+                        if(res.success) {
+                            currentUser = { id: String(res.userData.empId), name: res.userData.name, pos: res.userData.position };
+                            Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false }).then(() => switchView('user-dashboard-view'));
+                        } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    }).loginUser(id, pass);
+            } else {
+                setTimeout(() => {
+                    btn.innerHTML = 'เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i>'; btn.disabled = false;
+                    let foundUser = globalUsers.find(u => String(u.id) === id);
+                    if (foundUser) {
+                        currentUser = { id: String(foundUser.id), name: foundUser.name, pos: foundUser.pos };
+                        Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false }).then(() => switchView('user-dashboard-view'));
+                    } else { Swal.fire('ผิดพลาด', 'ไม่พบรหัสพนักงานในระบบ (กรุณาสมัครสมาชิกก่อนครับ)', 'error'); }
+                }, 500);
+            }
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const id = document.getElementById('adminId').value;
+            const pass = document.getElementById('adminPass').value;
+            if(id === 'Admintopaz' && pass === 'Topaz@2026') {
+                Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false }).then(() => switchView('admin-dashboard'));
+            } else { Swal.fire('ผิดพลาด', 'รหัส Admin ไม่ถูกต้อง', 'error'); }
+        }
+
+        function formatDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+        function getDayName(date) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]; }
+        function getDayClassInfo(date) {
+            const dateKey = formatDateKey(date);
+            const dayNum = date.getDay();
+            if (specialHolidays[dateKey]) return { class: 'bg-holiday', isHoliday: true, holidayName: specialHolidays[dateKey] };
+            if (dayNum === 0 || dayNum === 6) return { class: 'bg-weekend', isHoliday: true };
+            return { class: '', isHoliday: false };
+        }
+
+        function calcTotals(otDataObj, datesArray) {
+            let t15 = 0, t20 = 0, t30 = 0;
+            datesArray.forEach(date => {
+                const hoursStr = otDataObj[formatDateKey(date)];
+                if (hoursStr && parseFloat(hoursStr) > 0) {
+                    const hours = parseFloat(hoursStr);
+                    const info = getDayClassInfo(date);
+                    if (!info.isHoliday) { t15 += hours; } 
+                    else { if (hours <= 8) { t20 += hours; } else { t20 += 8; t30 += (hours - 8); } }
+                }
+            });
+            return { t15, t20, t30 };
+        }
+
+        let userPeriodStart, userPeriodEnd, userDatesArray = [];
+        let userCurrentStatus = 'Pending';
+        let userCurrentOTData = {};
+
+        function initUserData() {
+            document.getElementById('displayUserId').innerText = currentUser.id;
+            document.getElementById('displayUserName').innerText = currentUser.name;
+            changeUserPeriod();
+        }
+
+        function changeUserPeriod() {
+            const val = document.getElementById('userMonthSelector').value;
+            if(!val) return;
+            const parts = val.split('-');
+            const year = parseInt(parts[0]); const month = parseInt(parts[1]) - 1;
+            
+            userPeriodStart = new Date(year, month, 10);
+            userPeriodEnd = new Date(year, month + 1, 9);
+            document.getElementById('userPeriodDisplay').innerText = `${userPeriodStart.toLocaleDateString('th-TH', {day: 'numeric', month: 'short'})} - ${userPeriodEnd.toLocaleDateString('th-TH', {day: 'numeric', month: 'short', year: 'numeric'})}`;
+            
+            userDatesArray = [];
+            let current = new Date(userPeriodStart);
+            while (current <= userPeriodEnd) { userDatesArray.push(new Date(current)); current.setDate(current.getDate() + 1); }
+            
+            Swal.fire({ title: 'กำลังโหลดข้อมูล...', didOpen: () => { Swal.showLoading(); } });
+            
+            if (IS_GAS) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        Swal.close();
+                        if(res.success) { 
+                            const myData = res.data[String(currentUser.id)] || { status: 'Pending', otData: {} };
+                            userCurrentStatus = myData.status;
+                            userCurrentOTData = { ...myData.otData };
+                            renderUserSpreadsheet();
+                        } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    }).getMonthlyOT(val);
+            } else {
+                setTimeout(() => {
+                    Swal.close();
+                    if (!monthlyDataStore[val]) monthlyDataStore[val] = {};
+                    const myData = monthlyDataStore[val][String(currentUser.id)] || { status: 'Pending', otData: {} };
+                    userCurrentStatus = myData.status; 
+                    userCurrentOTData = JSON.parse(JSON.stringify(myData.otData)); 
+                    renderUserSpreadsheet();
+                }, 300);
+            }
+        }
+
+        function renderUserSpreadsheet() {
+            const isLocked = (userCurrentStatus === 'Approved');
+            const btnSave = document.getElementById('btnSaveUserOT');
+            
+            if (isLocked) {
+                btnSave.disabled = true;
+                btnSave.innerHTML = `<i class="fa-solid fa-lock me-1"></i> อนุมัติแล้ว (ห้ามแก้)`;
+            } else {
+                btnSave.disabled = false;
+                btnSave.innerHTML = `<i class="fa-solid fa-save me-1"></i> ส่งแผน OT`;
+            }
+
+            const thead = document.getElementById('userSsHeader');
+            let row1 = '<tr><th rowspan="2" class="sticky-col-1">No.</th><th rowspan="2" class="sticky-col-2">Code</th><th rowspan="2" class="sticky-col-3">Name / Position</th><th rowspan="2" class="sticky-col-4">สถานะ (Status)</th>';
+            let row2 = '<tr>';
+            userDatesArray.forEach(date => {
+                const info = getDayClassInfo(date);
+                row1 += `<th class="ot-cell ${info.class}">${getDayName(date)}</th>`;
+                row2 += `<th class="ot-cell ${info.class}">${date.getDate()}</th>`;
+            });
+            row1 += `<th rowspan="2" class="total-col-15">T *1.5</th><th rowspan="2" class="total-col-20">T *2</th><th rowspan="2" class="total-col-30">T *3</th></tr>`;
+            thead.innerHTML = row1 + row2 + '</tr>';
+
+            const tbody = document.getElementById('userSsBody');
+            let badgeColor = userCurrentStatus === 'Approved' ? 'bg-success' : (userCurrentStatus === 'Not Approve' ? 'bg-danger' : 'bg-warning text-dark');
+            let html = `<tr>
+                <td class="sticky-col-1 text-muted text-center">1</td>
+                <td class="sticky-col-2 fw-bold text-success text-center">${currentUser.id}</td>
+                <td class="sticky-col-3 text-start"><div class="fw-bold">${currentUser.name}</div><div class="text-muted" style="font-size: 0.75em;">${currentUser.pos}</div></td>
+                <td class="sticky-col-4 text-center"><span class="status-badge ${badgeColor} d-inline-block w-100">${userCurrentStatus}</span></td>`;
+            
+            userDatesArray.forEach(date => {
+                const dateKey = formatDateKey(date);
+                const info = getDayClassInfo(date);
+                const hours = userCurrentOTData[dateKey] || '';
+                html += `<td class="${info.class}"><input type="number" class="ot-input" value="${hours}" min="0" max="24" oninput="updateUserOT('${dateKey}', this.value)" ${isLocked ? 'disabled' : ''}></td>`;
+            });
+            
+            html += `<td class="total-col-15 text-center" id="user-total-15">-</td><td class="total-col-20 text-center" id="user-total-20">-</td><td class="total-col-30 text-center" id="user-total-30">-</td></tr>`;
+            tbody.innerHTML = html;
+            recalcUserTotals();
+        }
+
+        function updateUserOT(dateKey, value) {
+            const val = parseFloat(value);
+            if(val > 0) { userCurrentOTData[dateKey] = val; } else { delete userCurrentOTData[dateKey]; }
+            recalcUserTotals();
+            
+            if (!IS_GAS) {
+                const monthVal = document.getElementById('userMonthSelector').value;
+                if (!monthlyDataStore[monthVal]) monthlyDataStore[monthVal] = {};
+                if (!monthlyDataStore[monthVal][String(currentUser.id)]) monthlyDataStore[monthVal][String(currentUser.id)] = { status: 'Pending', otData: {} };
+                monthlyDataStore[monthVal][String(currentUser.id)].otData = JSON.parse(JSON.stringify(userCurrentOTData));
+            }
+        }
+
+        function recalcUserTotals() {
+            const { t15, t20, t30 } = calcTotals(userCurrentOTData, userDatesArray);
+            document.getElementById('user-total-15').innerText = t15 > 0 ? t15 : '-';
+            document.getElementById('user-total-20').innerText = t20 > 0 ? t20 : '-';
+            document.getElementById('user-total-30').innerText = t30 > 0 ? t30 : '-';
+        }
+
+        function saveUserOT() {
+            Swal.fire({ title: 'ยืนยันการส่งแผน OT?', text: 'ต้องกดปุ่มนี้เสมอข้อมูลถึงจะไปโชว์ที่หน้าแอดมิน!', icon: 'question', showCancelButton: true, confirmButtonText: 'บันทึกส่ง' }).then((result) => {
+                if (result.isConfirmed) {
+                    const monthVal = document.getElementById('userMonthSelector').value;
+                    userCurrentStatus = 'Pending';
+                    
+                    if (IS_GAS) {
+                        Swal.fire({ title: 'กำลังบันทึกเข้าฐานข้อมูล...', didOpen: () => { Swal.showLoading(); } });
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                if(res.success) {
+                                    Swal.fire('สำเร็จ!', 'ส่งแผน OT เรียบร้อยแล้ว (รอ Admin ตรวจสอบ)', 'success').then(() => renderUserSpreadsheet());
+                                } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                            })
+                            .saveMonthlyOT(monthVal, String(currentUser.id), userCurrentOTData, 'Pending');
+                    } else {
+                        if (!monthlyDataStore[monthVal]) monthlyDataStore[monthVal] = {};
+                        if (!monthlyDataStore[monthVal][String(currentUser.id)]) monthlyDataStore[monthVal][String(currentUser.id)] = { otData: {} };
+                        monthlyDataStore[monthVal][String(currentUser.id)].status = 'Pending';
+                        monthlyDataStore[monthVal][String(currentUser.id)].otData = JSON.parse(JSON.stringify(userCurrentOTData));
+                        Swal.fire('สำเร็จ!', 'บันทึกแผน OT (จำลอง) เรียบร้อย', 'success').then(() => renderUserSpreadsheet());
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // ADMIN DASHBOARD
+        // ==========================================
+        let adminDatesArray = [];
+
+        function initAdminData() {
+            Swal.fire({ title: 'กำลังโหลดข้อมูลพนักงาน...', didOpen: () => { Swal.showLoading(); } });
+            if (IS_GAS) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if(res.success) { globalUsers = res.data; changeAdminPeriod(); } 
+                        else { Swal.close(); Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    }).getUsersList();
+            } else {
+                setTimeout(() => { Swal.close(); changeAdminPeriod(); }, 300);
+            }
+        }
+
+        function changeAdminPeriod() {
+            const val = document.getElementById('monthSelector').value;
+            if(!val) return;
+            const parts = val.split('-');
+            const year = parseInt(parts[0]); const month = parseInt(parts[1]) - 1;
+            
+            const pStart = new Date(year, month, 10);
+            const pEnd = new Date(year, month + 1, 9);
+            document.getElementById('periodDisplay').innerText = `${pStart.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} - ${pEnd.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'numeric'})}`;
+            
+            adminDatesArray = [];
+            let current = new Date(pStart);
+            while (current <= pEnd) { adminDatesArray.push(new Date(current)); current.setDate(current.getDate() + 1); }
+            
+            if (IS_GAS) {
+                Swal.fire({ title: 'กำลังโหลดแผนรายเดือน...', didOpen: () => { Swal.showLoading(); } });
+                google.script.run
+                    .withSuccessHandler(res => {
+                        Swal.close();
+                        if(res.success) { monthlyData = res.data || {}; renderAdminHeaders(); filterSpreadsheet(); } 
+                        else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    }).getMonthlyOT(val);
+            } else {
+                monthlyData = monthlyDataStore[val] ? JSON.parse(JSON.stringify(monthlyDataStore[val])) : {};
+                renderAdminHeaders();
+                filterSpreadsheet();
+            }
+        }
+
+        function renderAdminHeaders() {
+            const thead = document.getElementById('ssHeader');
+            let row1 = '<tr><th rowspan="2" class="sticky-col-1">จัดเรียง</th><th rowspan="2" class="sticky-col-2">Code</th><th rowspan="2" class="sticky-col-3">Name / Position</th><th rowspan="2" class="sticky-col-4">การอนุมัติ / บันทึกแก้</th>';
+            let row2 = '<tr>';
+            adminDatesArray.forEach(date => {
+                const info = getDayClassInfo(date);
+                row1 += `<th class="ot-cell ${info.class}">${getDayName(date)}</th>`;
+                row2 += `<th class="ot-cell ${info.class}">${date.getDate()}</th>`;
+            });
+            row1 += `<th rowspan="2" class="total-col-15">T *1.5</th><th rowspan="2" class="total-col-20">T *2</th><th rowspan="2" class="total-col-30">T *3</th></tr>`;
+            thead.innerHTML = row1 + row2 + '</tr>';
+        }
+
+        function filterSpreadsheet() {
+            const text = document.getElementById('searchEmp').value.toLowerCase();
+            const statusF = document.getElementById('statusFilter').value;
+            const tbody = document.getElementById('ssBody');
+            let html = '';
+            
+            globalUsers.sort((a,b) => a.order - b.order);
+
+            let rowCount = 1;
+            globalUsers.forEach((user, index) => {
+                const monthInfo = monthlyData[String(user.id)] || { status: 'Pending', otData: {} };
+                
+                const matchText = String(user.id).toLowerCase().includes(text) || user.name.toLowerCase().includes(text);
+                const matchStatus = statusF === 'all' || monthInfo.status === statusF;
+                
+                if (matchText && matchStatus) {
+                    const { t15, t20, t30 } = calcTotals(monthInfo.otData, adminDatesArray);
+                    
+                    const selPen = monthInfo.status === 'Pending' ? 'selected' : '';
+                    const selApp = monthInfo.status === 'Approved' ? 'selected' : '';
+                    const selRej = monthInfo.status === 'Not Approve' ? 'selected' : '';
+                    let badgeColor = monthInfo.status === 'Approved' ? 'bg-success' : (monthInfo.status === 'Not Approve' ? 'bg-danger' : 'bg-warning text-dark');
+
+                    html += `<tr>
+                        <td class="sticky-col-1 text-muted">
+                            <div class="d-flex justify-content-between align-items-center px-1"><span>${rowCount++}</span>
+                                <div class="d-flex flex-column"><i class="fa-solid fa-caret-up cursor-pointer text-secondary" onclick="moveUser(${index}, -1)"></i><i class="fa-solid fa-caret-down cursor-pointer text-secondary" onclick="moveUser(${index}, 1)"></i></div>
+                            </div>
+                        </td>
+                        <td class="sticky-col-2 fw-bold text-primary text-center">${user.id}</td>
+                        <td class="sticky-col-3 text-start"><div class="fw-bold">${user.name}</div><div class="text-muted" style="font-size: 0.75em;">${user.pos}</div></td>
+                        <td class="sticky-col-4 text-center">
+                            <select class="form-select form-select-sm mb-1" style="font-size: 0.8em; font-weight: bold;" onchange="updateAdminStatus('${user.id}', this.value)">
+                                <option value="Pending" ${selPen}>⏳ รอพิจารณา</option>
+                                <option value="Approved" ${selApp}>✅ อนุมัติแล้ว</option>
+                                <option value="Not Approve" ${selRej}>❌ ไม่อนุมัติ</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary w-100 mb-1" style="font-size: 0.8em;" onclick="saveAdminRowOT('${user.id}')"><i class="fa-solid fa-floppy-disk"></i> บันทึกแก้ OT</button>
+                        </td>`;
+                    
+                    adminDatesArray.forEach(date => {
+                        const dateKey = formatDateKey(date);
+                        const hours = monthInfo.otData[dateKey] || '';
+                        html += `<td class="${getDayClassInfo(date).class}">
+                                    <input type="number" class="ot-input" value="${hours}" min="0" max="24" 
+                                           oninput="updateAdminOT('${user.id}', '${dateKey}', this.value)">
+                                 </td>`;
+                    });
+                    
+                    html += `<td class="total-col-15 text-center" id="t15-${user.id}">${t15 > 0 ? t15 : '-'}</td>
+                             <td class="total-col-20 text-center" id="t20-${user.id}">${t20 > 0 ? t20 : '-'}</td>
+                             <td class="total-col-30 text-center" id="t30-${user.id}">${t30 > 0 ? t30 : '-'}</td></tr>`;
+                }
+            });
+            if(html === '') html = `<tr><td colspan="${4 + adminDatesArray.length + 3}" class="text-center py-5 text-danger"><h5>ไม่พบข้อมูลผู้ลงทะเบียน</h5><p class="text-muted">พนักงานต้องสมัครสมาชิก ข้อมูลถึงจะมาแสดงที่นี่</p></td></tr>`;
+            tbody.innerHTML = html;
+        }
+
+        function updateAdminOT(userId, dateKey, value) {
+            const val = parseFloat(value);
+            if (!monthlyData[userId]) monthlyData[userId] = { status: 'Pending', otData: {} };
+
+            if (val > 0) {
+                monthlyData[userId].otData[dateKey] = val;
+            } else {
+                delete monthlyData[userId].otData[dateKey];
+            }
+
+            const { t15, t20, t30 } = calcTotals(monthlyData[userId].otData, adminDatesArray);
+            document.getElementById(`t15-${userId}`).innerText = t15 > 0 ? t15 : '-';
+            document.getElementById(`t20-${userId}`).innerText = t20 > 0 ? t20 : '-';
+            document.getElementById(`t30-${userId}`).innerText = t30 > 0 ? t30 : '-';
+        }
+
+        function saveAdminRowOT(userId) {
+            const val = document.getElementById('monthSelector').value;
+            const monthInfo = monthlyData[userId] || { status: 'Pending', otData: {} };
+
+            if (IS_GAS) {
+                Swal.fire({ title: 'กำลังบันทึกข้อมูล...', toast: true, position: 'top-end', showConfirmButton: false, didOpen: () => Swal.showLoading() });
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if(res.success) {
+                            Swal.fire({title: 'บันทึก OT ของพนักงานสำเร็จ', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, icon: 'success'});
+                        } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    })
+                    .withFailureHandler(err => {
+                        Swal.fire('ข้อผิดพลาด', 'บันทึกไม่สำเร็จ: ' + err.message, 'error');
+                    })
+                    .saveMonthlyOT(val, userId, monthInfo.otData, monthInfo.status);
+            } else {
+                if (!monthlyDataStore[val]) monthlyDataStore[val] = {};
+                monthlyDataStore[val][userId] = JSON.parse(JSON.stringify(monthInfo));
+                Swal.fire({title: 'บันทึก OT (จำลอง) สำเร็จ', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, icon: 'success'});
+            }
+        }
+
+        function updateAdminStatus(id, newStatus) {
+            const val = document.getElementById('monthSelector').value;
+            if(!monthlyData[String(id)]) monthlyData[String(id)] = { otData: {} };
+            monthlyData[String(id)].status = newStatus;
+            
+            saveAdminRowOT(id); 
+            filterSpreadsheet();
+        }
+
+        function moveUser(index, direction) {
+            if (index + direction < 0 || index + direction >= globalUsers.length) return;
+            const temp = globalUsers[index];
+            globalUsers[index] = globalUsers[index + direction];
+            globalUsers[index + direction] = temp;
+            globalUsers.forEach((u, i) => u.order = i + 1);
+            filterSpreadsheet();
+        }
+
+        function saveSortOrder() {
+            if (IS_GAS) {
+                Swal.fire({ title: 'กำลังบันทึกลำดับ...', didOpen: () => { Swal.showLoading(); } });
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if(res.success) Swal.fire('บันทึกลำดับสำเร็จ!', 'ระบบจดจำการจัดเรียงพนักงานของคุณแล้ว', 'success');
+                        else Swal.fire('ผิดพลาด', res.message, 'error');
+                    })
+                    .updateUsersInfo(globalUsers);
+            } else { Swal.fire('บันทึกลำดับสำเร็จ!', 'ระบบจดจำการจัดเรียงพนักงานของคุณแล้ว', 'success'); }
+        }
+
+        function exportExcel() { Swal.fire('Coming Soon', 'ดาวน์โหลด Excel', 'info'); }
+    </script>
+</body>
+</html>
