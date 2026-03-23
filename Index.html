@@ -4,58 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OT Planning System</title>
+    
+    <!-- Favicon (เปลี่ยนเซิร์ฟเวอร์เพื่อป้องกันการบล็อก Hotlink) -->
+    <link rel="icon" href="https://img.icons8.com/color/48/overtime.png" type="image/png">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- ใช้เฉพาะ ExcelJS สำหรับสร้างไฟล์ Excel ที่รองรับสีและสไตล์ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
-        body { font-family: 'Prompt', sans-serif; background-color: #f4f7f6; color: #333; }
-        .spa-view { display: none; animation: fadeIn 0.4s ease-in-out; }
+        
+        /* ==========================================
+           1. MODERN THEME VARIABLES & BASE
+        ========================================== */
+        :root {
+            --theme-blue: #6366f1;
+            --theme-purple: #a855f7;
+            --theme-light-blue: #e0e7ff;
+            --theme-light-purple: #f3e8ff;
+            --theme-dark: #1e293b;
+            --bg-gradient: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+        }
+
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background: var(--bg-gradient); 
+            color: #334155; 
+            min-height: 100vh;
+        }
+
+        /* ==========================================
+           2. UTILITIES & COMPONENTS
+        ========================================== */
+        .spa-view { display: none; animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .spa-view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .glass-card { background: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); border: none; }
-        .navbar-custom { background: linear-gradient(135deg, #0d6efd, #0dcaf0); }
-        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .table-container::-webkit-scrollbar { height: 10px; }
-        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px;}
-        .table-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 8px;}
-        .table-ot { margin-bottom: 0; white-space: nowrap; border-collapse: separate; border-spacing: 0; min-width: max-content; }
-        .table-ot th, .table-ot td { border-right: 1px solid #e9ecef; border-bottom: 1px solid #e9ecef; text-align: center; vertical-align: middle; padding: 6px 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Glassmorphism Cards */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.08); 
+            border: 1px solid rgba(255, 255, 255, 0.6); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* Navbar */
+        .navbar-custom { 
+            background: linear-gradient(135deg, var(--theme-blue), var(--theme-purple)); 
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Custom Text Colors */
+        .text-theme { background: -webkit-linear-gradient(135deg, var(--theme-blue), var(--theme-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .text-blue-custom { color: var(--theme-blue); }
+        .text-purple-custom { color: var(--theme-purple); }
+
+        /* Custom Buttons */
+        .btn-theme { background: linear-gradient(135deg, var(--theme-blue), var(--theme-purple)); color: white; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); transition: all 0.3s; }
+        .btn-theme:hover { background: linear-gradient(135deg, #4f46e5, #9333ea); color: white; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+        .btn-outline-theme { border: 2px solid var(--theme-blue); color: var(--theme-blue); background: transparent; transition: all 0.3s; font-weight: 500; }
+        .btn-outline-theme:hover { background: var(--theme-blue); color: white; transform: translateY(-2px); }
+        .btn-outline-purple { border: 2px solid var(--theme-purple); color: var(--theme-purple); background: transparent; transition: all 0.3s; font-weight: 500; }
+        .btn-outline-purple:hover { background: var(--theme-purple); color: white; transform: translateY(-2px); }
+
+        .cursor-pointer { cursor: pointer; }
+        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.15); }
+
+        /* Inputs */
+        .form-control, .form-select { border-radius: 10px; border: 1px solid #cbd5e1; padding: 0.6rem 1rem; }
+        .form-control:focus, .form-select:focus { border-color: var(--theme-blue); box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25); }
+
+        /* ==========================================
+           3. SPREADSHEET TABLE STYLING
+        ========================================== */
+        .table-container { width: 100%; overflow-x: auto; background: rgba(255,255,255,0.9); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid rgba(255, 255, 255, 0.8); padding-bottom: 5px; }
+        .table-container::-webkit-scrollbar { height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px;}
+        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px;}
+        .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .table-ot { margin-bottom: 0; white-space: nowrap; border-collapse: separate; border-spacing: 0; min-width: max-content; font-size: 0.9rem; }
+        .table-ot th, .table-ot td { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; padding: 8px 10px; }
         
         /* Sticky Header */
-        .table-ot thead th { background-color: #f8f9fa; color: #495057; font-weight: 600; position: sticky; top: 0; z-index: 10; border-top: 1px solid #e9ecef; }
+        .table-ot thead th { background-color: #f8fafc; color: #475569; font-weight: 600; position: sticky; top: 0; z-index: 10; border-top: 1px solid #e2e8f0; }
         .table-ot thead th[class*="sticky-col-"] { z-index: 15; } 
         .table-ot thead th[class*="total-col-"] { z-index: 15; }
         
         /* Sticky Left Columns (Admin) */
-        .sticky-col-1 { position: sticky; left: 0; background-color: #f8f9fa; z-index: 5; border-right: 1px solid #dee2e6; width: 50px; min-width: 50px; }
-        .sticky-col-2 { position: sticky; left: 50px; background-color: #fff; z-index: 5; width: 90px; min-width: 90px; }
-        .sticky-col-3 { position: sticky; left: 140px; background-color: #fff; z-index: 5; width: 220px; min-width: 220px; }
-        .sticky-col-4 { position: sticky; left: 360px; background-color: #fff; z-index: 5; border-right: 2px solid #adb5bd !important; width: 140px; min-width: 140px; }
+        .sticky-col-1 { position: sticky; left: 0; background-color: #f8fafc; z-index: 5; border-right: 1px solid #cbd5e1; width: 60px; min-width: 60px; }
+        .sticky-col-2 { position: sticky; left: 60px; background-color: #ffffff; z-index: 5; width: 90px; min-width: 90px; }
+        .sticky-col-3 { position: sticky; left: 150px; background-color: #ffffff; z-index: 5; width: 220px; min-width: 220px; }
+        .sticky-col-4 { position: sticky; left: 370px; background-color: #ffffff; z-index: 5; border-right: 2px solid #94a3b8 !important; width: 140px; min-width: 140px; }
         
-        .bg-weekend { background-color: #fff3cd !important; }
-        .bg-holiday { background-color: #f8d7da !important; color: #842029; font-weight: bold; }
-        .text-holiday { color: #dc3545; font-size: 0.7em; display: block; }
+        /* Badges & Special Days */
+        .bg-weekend { background-color: #fef08a !important; color: #854d0e; }
+        .bg-holiday { background-color: #fecdd3 !important; color: #9f1239; font-weight: 600; }
         .ot-cell { width: 45px; min-width: 45px; }
         
-        /* Total Columns */
-        .total-col-15 { background-color: #eaf1f8; font-weight: bold; position: sticky; right: 120px; border-left: 2px solid #adb5bd !important; z-index: 5; width: 60px; min-width: 60px; color: #0d6efd;}
-        .total-col-20 { background-color: #eaf8ea; font-weight: bold; position: sticky; right: 60px; z-index: 5; border-left: 1px solid #dee2e6; width: 60px; min-width: 60px; color: #198754;}
-        .total-col-30 { background-color: #f8eaeb; font-weight: bold; position: sticky; right: 0; z-index: 5; border-left: 1px solid #dee2e6; width: 60px; min-width: 60px; color: #dc3545;}
+        /* Total Columns (Theme Colors) */
+        .total-col-15 { background-color: var(--theme-light-blue); font-weight: bold; position: sticky; right: 120px; border-left: 2px solid #94a3b8 !important; z-index: 5; width: 60px; min-width: 60px; color: var(--theme-blue);}
+        .total-col-20 { background-color: var(--theme-light-purple); font-weight: bold; position: sticky; right: 60px; z-index: 5; border-left: 1px solid #cbd5e1; width: 60px; min-width: 60px; color: var(--theme-purple);}
+        .total-col-30 { background-color: #ffe4e6; font-weight: bold; position: sticky; right: 0; z-index: 5; border-left: 1px solid #cbd5e1; width: 60px; min-width: 60px; color: #e11d48;}
         
-        .cursor-pointer { cursor: pointer; transition: transform 0.2s; }
-        .cursor-pointer:hover { transform: translateY(-5px); }
-        
-        /* Input */
-        .ot-input { width: 40px; min-width: 40px; text-align: center; margin: 0 auto; border: 1px solid #ced4da; border-radius: 4px; padding: 2px; }
-        .ot-input:focus { outline: none; border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); background-color: #fffbcc; }
-        .ot-input:disabled { background-color: #e9ecef; cursor: not-allowed; border-color: transparent; }
+        /* Input within table */
+        .ot-input { width: 45px; min-width: 45px; text-align: center; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; font-size: 0.9rem; transition: all 0.2s; }
+        .ot-input:focus { outline: none; border-color: var(--theme-blue); box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.2); background-color: #fff; transform: scale(1.05); }
+        .ot-input:disabled { background-color: #f1f5f9; cursor: not-allowed; border-color: transparent; color: #94a3b8; }
         .ot-input::-webkit-outer-spin-button, .ot-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .ot-input[type=number] { -moz-appearance: textfield; }
-        .status-badge { font-size: 0.8em; padding: 4px 8px; border-radius: 12px; }
+        
+        .status-badge { font-size: 0.8em; padding: 6px 12px; border-radius: 20px; font-weight: 500; letter-spacing: 0.5px; }
 
-        /* ปลดล็อคคอลัมน์ซ้ายขวาให้หน้า User เลื่อนง่ายๆ */
+        /* Mobile Fixes for User View */
         #userSpreadsheetTable [class*="sticky-col-"] { left: auto !important; }
         #userSpreadsheetTable [class*="total-col-"] { right: auto !important; }
         #userSpreadsheetTable tbody [class*="sticky-col-"], #userSpreadsheetTable tbody [class*="total-col-"] { z-index: 1 !important; }
@@ -64,7 +132,8 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm mb-4">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
         <div class="container-fluid px-4">
             <a class="navbar-brand fw-bold" href="#" onclick="switchView('landing-view')"><i class="fa-solid fa-clock me-2"></i>OT Planning TOPAZ-BKK1</a>
             <div class="d-flex" id="nav-actions"></div>
@@ -77,22 +146,34 @@
         <div id="landing-view" class="spa-view active">
             <div class="row justify-content-center mt-5">
                 <div class="col-md-10 text-center">
-                    <h2 class="fw-bold mb-4">ระบบจัดการและวางแผนล่วงเวลา (OT)</h2>
-                    <p class="text-muted mb-5">กรุณาเลือกรูปแบบการเข้าสู่ระบบ</p>
+                    <h2 class="fw-bold mb-3 text-theme">ระบบจัดการและวางแผนล่วงเวลา (OT)</h2>
+                    <p class="text-muted mb-5 fs-5">กรุณาเลือกรูปแบบการเข้าสู่ระบบเพื่อเริ่มต้นใช้งาน</p>
                     <div class="row g-4 justify-content-center">
                         <div class="col-md-4">
-                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('user-login-view')">
-                                <div class="card-body"><i class="fa-solid fa-right-to-bracket fa-3x text-success mb-3"></i><h4>เข้าสู่ระบบพนักงาน</h4><button class="btn btn-outline-success mt-2">เข้าสู่ระบบ</button></div>
+                            <div class="card glass-card hover-lift h-100 py-5 cursor-pointer" onclick="switchView('user-login-view')">
+                                <div class="card-body">
+                                    <div class="mb-4"><i class="fa-solid fa-right-to-bracket fa-4x text-blue-custom"></i></div>
+                                    <h4 class="fw-bold text-dark">เข้าสู่ระบบพนักงาน</h4>
+                                    <button class="btn btn-outline-theme mt-3 rounded-pill px-4">เข้าสู่ระบบ</button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('register-view')">
-                                <div class="card-body"><i class="fa-solid fa-user-plus fa-3x text-primary mb-3"></i><h4>สมัครสมาชิก</h4><button class="btn btn-outline-primary mt-2">ลงทะเบียน</button></div>
+                            <div class="card glass-card hover-lift h-100 py-5 cursor-pointer" onclick="switchView('register-view')">
+                                <div class="card-body">
+                                    <div class="mb-4"><i class="fa-solid fa-user-plus fa-4x text-purple-custom"></i></div>
+                                    <h4 class="fw-bold text-dark">สมัครสมาชิกใหม่</h4>
+                                    <button class="btn btn-outline-purple mt-3 rounded-pill px-4">ลงทะเบียน</button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card glass-card h-100 py-4 cursor-pointer" onclick="switchView('admin-login-view')">
-                                <div class="card-body"><i class="fa-solid fa-user-shield fa-3x text-info mb-3"></i><h4>ผู้ดูแลระบบ</h4><button class="btn btn-outline-info mt-2">Admin Login</button></div>
+                            <div class="card glass-card hover-lift h-100 py-5 cursor-pointer" onclick="switchView('admin-login-view')">
+                                <div class="card-body">
+                                    <div class="mb-4"><i class="fa-solid fa-user-shield fa-4x text-secondary"></i></div>
+                                    <h4 class="fw-bold text-dark">ผู้ดูแลระบบ</h4>
+                                    <button class="btn btn-outline-dark mt-3 rounded-pill px-4">Admin Login</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -104,13 +185,20 @@
         <div id="register-view" class="spa-view">
             <div class="row justify-content-center mt-4">
                 <div class="col-md-8 col-lg-6">
-                    <div class="card glass-card p-4">
-                        <div class="text-center mb-4"><h3 class="fw-bold"><i class="fa-solid fa-address-card text-primary me-2"></i>ลงทะเบียนพนักงาน</h3></div>
+                    <div class="card glass-card p-5">
+                        <div class="text-center mb-4"><h3 class="fw-bold text-purple-custom"><i class="fa-solid fa-address-card me-2"></i>ลงทะเบียนพนักงาน</h3></div>
                         <form id="registerForm" onsubmit="handleRegister(event)">
                             <div class="row g-3">
-                                <div class="col-md-6"><input type="text" class="form-control" id="regEmpId" required placeholder="รหัสพนักงาน (ID)"></div>
-                                <div class="col-md-6"><input type="text" class="form-control" id="regName" required placeholder="ชื่อ-สกุล"></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted ms-1 mb-1">รหัสพนักงาน (ID)</label>
+                                    <input type="text" class="form-control" id="regEmpId" required placeholder="เช่น 1001">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted ms-1 mb-1">ชื่อ-สกุล</label>
+                                    <input type="text" class="form-control" id="regName" required placeholder="ระบุชื่อจริง นามสกุล">
+                                </div>
                                 <div class="col-md-12">
+                                    <label class="form-label small text-muted ms-1 mb-1">ตำแหน่ง</label>
                                     <select class="form-select" id="regPosition" required>
                                         <option value="" selected disabled>-- เลือกตำแหน่งของท่าน --</option>
                                         <option value="Engineer EE">Engineer EE</option><option value="Bim">Bim</option><option value="CAD">CAD</option><option value="Foreman">Foreman</option>
@@ -118,10 +206,22 @@
                                         <option value="Maid">Maid</option><option value="Driver">Driver</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6"><input type="tel" class="form-control" id="regPhone" required placeholder="เบอร์โทรศัพท์"></div>
-                                <div class="col-md-6"><input type="email" class="form-control" id="regEmail" required placeholder="อีเมล"></div>
-                                <div class="col-12"><input type="password" class="form-control" id="regPassword" required placeholder="รหัสผ่าน (Password)"></div>
-                                <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100" id="btnRegister">สมัครสมาชิก</button><button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted ms-1 mb-1">เบอร์โทรศัพท์</label>
+                                    <input type="tel" class="form-control" id="regPhone" required placeholder="08X-XXX-XXXX">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted ms-1 mb-1">อีเมล</label>
+                                    <input type="email" class="form-control" id="regEmail" required placeholder="example@email.com">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted ms-1 mb-1">รหัสผ่าน</label>
+                                    <input type="password" class="form-control" id="regPassword" required placeholder="กำหนดรหัสผ่าน (Password)">
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-theme w-100 py-2 rounded-pill fs-5" id="btnRegister">สมัครสมาชิก</button>
+                                    <button type="button" class="btn btn-link w-100 text-decoration-none mt-3 text-muted" onclick="switchView('landing-view')"><i class="fa-solid fa-arrow-left me-1"></i> กลับหน้าแรก</button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -133,30 +233,42 @@
         <div id="user-login-view" class="spa-view">
             <div class="row justify-content-center mt-5">
                 <div class="col-md-4">
-                    <div class="card glass-card p-4">
-                        <div class="text-center mb-4"><i class="fa-solid fa-user-circle fa-3x text-success mb-3"></i><h3 class="fw-bold">เข้าสู่ระบบพนักงาน</h3></div>
+                    <div class="card glass-card p-5">
+                        <div class="text-center mb-4"><i class="fa-solid fa-user-circle fa-4x text-blue-custom mb-3"></i><h3 class="fw-bold text-dark">เข้าสู่ระบบพนักงาน</h3></div>
                         <form id="userLoginForm" onsubmit="handleUserLogin(event)">
-                            <div class="mb-3"><input type="text" class="form-control" id="userId" required placeholder="รหัสพนักงาน (ID)"></div>
-                            <div class="mb-3"><input type="password" class="form-control" id="userPass" required placeholder="รหัสผ่าน (Password)"></div>
-                            <button type="submit" class="btn btn-success w-100" id="btnUserLogin">เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i></button>
-                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted ms-1 mb-1">รหัสพนักงาน</label>
+                                <input type="text" class="form-control" id="userId" required placeholder="ID พนักงาน">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label small text-muted ms-1 mb-1">รหัสผ่าน</label>
+                                <input type="password" class="form-control" id="userPass" required placeholder="Password">
+                            </div>
+                            <button type="submit" class="btn btn-theme w-100 py-2 rounded-pill fs-5" id="btnUserLogin">เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i></button>
+                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-3 text-muted" onclick="switchView('landing-view')"><i class="fa-solid fa-arrow-left me-1"></i> กลับหน้าแรก</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 5. ADMIN LOGIN VIEW -->
+        <!-- 4. ADMIN LOGIN VIEW -->
         <div id="admin-login-view" class="spa-view">
             <div class="row justify-content-center mt-5">
                 <div class="col-md-4">
-                    <div class="card glass-card p-4">
-                        <div class="text-center mb-4"><i class="fa-solid fa-lock fa-3x text-secondary mb-3"></i><h3 class="fw-bold">Admin Login</h3></div>
+                    <div class="card glass-card p-5">
+                        <div class="text-center mb-4"><i class="fa-solid fa-lock fa-4x text-secondary mb-3"></i><h3 class="fw-bold text-dark">Admin Login</h3></div>
                         <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
-                            <div class="mb-3"><input type="text" class="form-control" id="adminId" required placeholder="Admin ID"></div>
-                            <div class="mb-4"><input type="password" class="form-control" id="adminPass" required placeholder="Password"></div>
-                            <button type="submit" class="btn btn-dark w-100">เข้าสู่ระบบจัดการ</button>
-                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-2 text-muted" onclick="switchView('landing-view')">กลับหน้าแรก</button>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted ms-1 mb-1">รหัสผู้ดูแลระบบ</label>
+                                <input type="text" class="form-control" id="adminId" required placeholder="Admin ID">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label small text-muted ms-1 mb-1">รหัสผ่าน</label>
+                                <input type="password" class="form-control" id="adminPass" required placeholder="Password">
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100 py-2 rounded-pill fs-5">เข้าสู่ระบบจัดการ</button>
+                            <button type="button" class="btn btn-link w-100 text-decoration-none mt-3 text-muted" onclick="switchView('landing-view')"><i class="fa-solid fa-arrow-left me-1"></i> กลับหน้าแรก</button>
                         </form>
                     </div>
                 </div>
@@ -164,30 +276,30 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- 6. USER DASHBOARD VIEW -->
+        <!-- 5. USER DASHBOARD VIEW -->
         <!-- ============================================== -->
         <div id="user-dashboard-view" class="spa-view">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
                 <div>
-                    <h3 class="fw-bold mb-0 text-success"><i class="fa-solid fa-person-digging me-2"></i>หน้าวางแผน OT ของฉัน</h3>
-                    <p class="text-muted mb-0 mt-1">ยินดีต้อนรับ: <strong id="displayUserName" class="text-primary"></strong> (รหัส: <span id="displayUserId"></span>)</p>
+                    <h3 class="fw-bold mb-0 text-blue-custom"><i class="fa-solid fa-person-digging me-2"></i>หน้าวางแผน OT ของฉัน</h3>
+                    <p class="text-muted mb-0 mt-1">ยินดีต้อนรับ: <strong id="displayUserName" class="text-purple-custom"></strong> (รหัส: <span id="displayUserId"></span>)</p>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <button class="btn btn-outline-info px-3" onclick="initUserData()"><i class="fa-solid fa-rotate-right me-1"></i> รีเฟรชสถานะ</button>
-                    <button class="btn btn-primary px-4" id="btnSaveUserOT" onclick="saveUserOT()"><i class="fa-solid fa-save me-1"></i> ส่งแผน OT</button>
+                    <button class="btn btn-outline-secondary px-3 rounded-pill" onclick="initUserData()"><i class="fa-solid fa-rotate-right me-1"></i> รีเฟรช</button>
+                    <button class="btn btn-theme px-4 rounded-pill" id="btnSaveUserOT" onclick="saveUserOT()"><i class="fa-solid fa-paper-plane me-1"></i> ส่งแผน OT</button>
                 </div>
             </div>
 
-            <div class="card glass-card p-3 mb-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">เลือกรอบบิล (เดือน/ปี)</label>
-                        <input type="month" class="form-control" id="userMonthSelector" onchange="changeUserPeriod()">
+            <div class="card glass-card p-3 mb-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label small text-muted fw-bold mb-1"><i class="fa-regular fa-calendar-alt me-1"></i> เลือกรอบบิล (เดือน/ปี)</label>
+                        <input type="month" class="form-control bg-light" id="userMonthSelector" onchange="changeUserPeriod()">
                     </div>
-                    <div class="col-md-9 text-end mt-auto">
-                        <div class="d-inline-flex align-items-center me-3"><span class="badge bg-weekend text-dark border me-1">&nbsp;&nbsp;</span> เสาร์-อาทิตย์</div>
-                        <div class="d-inline-flex align-items-center"><span class="badge bg-holiday text-dark border me-1">&nbsp;&nbsp;</span> วันหยุดพิเศษ</div>
-                        <p class="mb-0 text-muted small mt-2">รอบตัดวิก: <strong id="userPeriodDisplay"></strong></p>
+                    <div class="col-md-8 col-lg-9 text-md-end mt-auto">
+                        <div class="d-inline-flex align-items-center me-3 px-2 py-1 rounded" style="background: rgba(255,255,255,0.5);"><span class="badge bg-weekend text-dark border me-2">&nbsp;&nbsp;</span> เสาร์-อาทิตย์</div>
+                        <div class="d-inline-flex align-items-center px-2 py-1 rounded" style="background: rgba(255,255,255,0.5);"><span class="badge bg-holiday text-dark border me-2">&nbsp;&nbsp;</span> วันหยุดพิเศษ</div>
+                        <p class="mb-0 text-muted small mt-2">รอบตัดวิกที่กำลังแสดง: <strong id="userPeriodDisplay" class="text-blue-custom"></strong></p>
                     </div>
                 </div>
             </div>
@@ -201,33 +313,39 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- 7. ADMIN DASHBOARD VIEW -->
+        <!-- 6. ADMIN DASHBOARD VIEW -->
         <!-- ============================================== -->
         <div id="admin-dashboard" class="spa-view">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
                 <div>
-                    <h3 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-calendar-check me-2"></i>ตารางแผนปฏิบัติงานล่วงเวลา (OT) ภาพรวม</h3>
-                    <p class="text-muted mb-0 mt-1">รอบตัดวิก: <strong id="periodDisplay"></strong></p>
+                    <h3 class="fw-bold mb-0 text-theme"><i class="fa-solid fa-calendar-check me-2"></i>ตารางแผนปฏิบัติงานล่วงเวลา (ภาพรวม)</h3>
+                    <p class="text-muted mb-0 mt-1">รอบตัดวิก: <strong id="periodDisplay" class="text-blue-custom"></strong></p>
                 </div>
-                <div class="d-flex gap-2 align-items-center">
-                    <button class="btn btn-outline-primary" onclick="initAdminData()"><i class="fa-solid fa-rotate-right me-1"></i> ดึงข้อมูลล่าสุด</button>
-                    <button class="btn btn-outline-dark" onclick="saveSortOrder()"><i class="fa-solid fa-sort-amount-down"></i> บันทึกลำดับ</button>
-                    <button class="btn btn-success" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export Excel</button>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <button class="btn btn-outline-secondary rounded-pill" onclick="initAdminData()"><i class="fa-solid fa-rotate-right me-1"></i> ดึงข้อมูล</button>
+                    <button class="btn btn-outline-dark rounded-pill" onclick="saveSortOrder()"><i class="fa-solid fa-sort-amount-down"></i> บันทึกลำดับ</button>
+                    <button class="btn btn-success rounded-pill" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export Excel</button>
                 </div>
             </div>
             
-            <div class="card glass-card p-3 mb-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">เลือกรอบบิล (เดือน/ปี)</label>
-                        <input type="month" class="form-control" id="monthSelector" onchange="changeAdminPeriod()">
+            <div class="card glass-card p-3 mb-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold mb-1"><i class="fa-regular fa-calendar-alt me-1"></i> เลือกรอบบิล</label>
+                        <input type="month" class="form-control bg-light" id="monthSelector" onchange="changeAdminPeriod()">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">ค้นหา (รหัส/ชื่อ)</label>
-                        <input type="text" class="form-control" id="searchEmp" placeholder="🔍 ค้นหารหัส หรือ ชื่อ..." onkeyup="filterSpreadsheet()">
+                        <label class="form-label small text-muted fw-bold mb-1"><i class="fa-solid fa-search me-1"></i> ค้นหาพนักงาน</label>
+                        <input type="text" class="form-control" id="searchEmp" placeholder="🔍 รหัส หรือ ชื่อ..." onkeyup="filterSpreadsheet()">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">สถานะอนุมัติ</label>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold mb-1"><i class="fa-solid fa-briefcase me-1"></i> ตำแหน่ง</label>
+                        <select class="form-select" id="positionFilter" onchange="filterSpreadsheet()">
+                            <option value="all">ทุกตำแหน่ง</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold mb-1"><i class="fa-solid fa-filter me-1"></i> สถานะอนุมัติ</label>
                         <select class="form-select" id="statusFilter" onchange="filterSpreadsheet()">
                             <option value="all">ทุกสถานะ</option>
                             <option value="Pending">รอพิจารณา (Pending)</option>
@@ -235,7 +353,7 @@
                             <option value="Not Approve">ไม่อนุมัติ (Not Approve)</option>
                         </select>
                     </div>
-                    <div class="col-md-3 text-end mt-auto">
+                    <div class="col-md-3 text-md-end pb-2">
                         <div class="d-inline-flex align-items-center me-2"><span class="badge bg-weekend text-dark border me-1">&nbsp;&nbsp;</span> วันหยุด</div>
                         <div class="d-inline-flex align-items-center"><span class="badge bg-holiday text-dark border me-1">&nbsp;&nbsp;</span> นักขัตฤกษ์</div>
                     </div>
@@ -249,8 +367,16 @@
             </div>
         </div>
 
+        <!-- Footer / Attribution (Flaticon) -->
+        <div class="text-center mt-5 mb-2">
+            <small style="font-size: 0.7rem; opacity: 0.6;">
+                <a href="https://www.flaticon.com/free-icons/overtime" title="overtime icons" target="_blank" class="text-muted text-decoration-none">Overtime icons created by surang - Flaticon</a>
+            </small>
+        </div>
+
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const IS_GAS = typeof google !== 'undefined' && google.script;
@@ -283,7 +409,7 @@
             
             const navActions = document.getElementById('nav-actions');
             if(viewId === 'admin-dashboard' || viewId === 'user-dashboard-view') {
-                navActions.innerHTML = `<button class="btn btn-sm btn-danger" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> ออกจากระบบ</button>`;
+                navActions.innerHTML = `<button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="logout()"><i class="fa-solid fa-sign-out-alt me-1"></i> ออกจากระบบ</button>`;
                 if(viewId === 'admin-dashboard') initAdminData(); 
                 if(viewId === 'user-dashboard-view') initUserData(); 
             } else { navActions.innerHTML = ''; }
@@ -291,7 +417,6 @@
 
         function logout() { currentUser = null; switchView('landing-view'); }
 
-        // === ดึงข้อมูลลงทะเบียนให้ครบทั้ง 6 ช่อง ===
         function handleRegister(event) {
             event.preventDefault();
             const btn = document.getElementById('btnRegister');
@@ -317,6 +442,10 @@
                                 switchView('user-login-view');
                             });
                         } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                    })
+                    .withFailureHandler(err => {
+                        btn.innerHTML = 'สมัครสมาชิก'; btn.disabled = false;
+                        Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', err.message, 'error');
                     })
                     .registerUser(data);
             } else {
@@ -345,7 +474,12 @@
                             currentUser = { id: String(res.userData.empId), name: res.userData.name, pos: res.userData.position };
                             Swal.fire({ title: 'เข้าสู่ระบบสำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false }).then(() => switchView('user-dashboard-view'));
                         } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
-                    }).loginUser(id, pass);
+                    })
+                    .withFailureHandler(err => {
+                        btn.innerHTML = 'เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i>'; btn.disabled = false;
+                        Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', err.message, 'error');
+                    })
+                    .loginUser(id, pass);
             } else {
                 setTimeout(() => {
                     btn.innerHTML = 'เข้าสู่ระบบ <i class="fa-solid fa-sign-in-alt ms-1"></i>'; btn.disabled = false;
@@ -415,7 +549,7 @@
             let current = new Date(userPeriodStart);
             while (current <= userPeriodEnd) { userDatesArray.push(new Date(current)); current.setDate(current.getDate() + 1); }
             
-            Swal.fire({ title: 'กำลังโหลดข้อมูล...', didOpen: () => { Swal.showLoading(); } });
+            Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             
             if (IS_GAS) {
                 google.script.run
@@ -427,7 +561,12 @@
                             userCurrentOTData = { ...myData.otData };
                             renderUserSpreadsheet();
                         } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
-                    }).getMonthlyOT(val);
+                    })
+                    .withFailureHandler(err => {
+                        Swal.close();
+                        Swal.fire('ระบบขัดข้อง', 'โปรดตรวจสอบการทำงานของ Code.gs หรือคุณอาจจะยังไม่ได้ Deploy เป็นเวอร์ชันใหม่ (New deployment)<br><br><b>Error:</b> ' + err.message, 'error');
+                    })
+                    .getMonthlyOT(val);
             } else {
                 setTimeout(() => {
                     Swal.close();
@@ -446,10 +585,12 @@
             
             if (isLocked) {
                 btnSave.disabled = true;
-                btnSave.innerHTML = `<i class="fa-solid fa-lock me-1"></i> อนุมัติแล้ว (ห้ามแก้)`;
+                btnSave.innerHTML = `<i class="fa-solid fa-lock me-1"></i> อนุมัติแล้ว (ล็อคข้อมูล)`;
+                btnSave.classList.replace('btn-theme', 'btn-secondary');
             } else {
                 btnSave.disabled = false;
-                btnSave.innerHTML = `<i class="fa-solid fa-save me-1"></i> ส่งแผน OT`;
+                btnSave.innerHTML = `<i class="fa-solid fa-paper-plane me-1"></i> ส่งแผน OT`;
+                btnSave.classList.replace('btn-secondary', 'btn-theme');
             }
 
             const thead = document.getElementById('userSsHeader');
@@ -464,12 +605,12 @@
             thead.innerHTML = row1 + row2 + '</tr>';
 
             const tbody = document.getElementById('userSsBody');
-            let badgeColor = userCurrentStatus === 'Approved' ? 'bg-success' : (userCurrentStatus === 'Not Approve' ? 'bg-danger' : 'bg-warning text-dark');
+            let badgeColor = userCurrentStatus === 'Approved' ? 'bg-success text-white' : (userCurrentStatus === 'Not Approve' ? 'bg-danger text-white' : 'bg-warning text-dark');
             let html = `<tr>
                 <td class="sticky-col-1 text-muted text-center">1</td>
-                <td class="sticky-col-2 fw-bold text-success text-center">${currentUser.id}</td>
+                <td class="sticky-col-2 fw-bold text-blue-custom text-center">${currentUser.id}</td>
                 <td class="sticky-col-3 text-start"><div class="fw-bold">${currentUser.name}</div><div class="text-muted" style="font-size: 0.75em;">${currentUser.pos}</div></td>
-                <td class="sticky-col-4 text-center"><span class="status-badge ${badgeColor} d-inline-block w-100">${userCurrentStatus}</span></td>`;
+                <td class="sticky-col-4 text-center"><span class="status-badge ${badgeColor} d-inline-block w-100 shadow-sm">${userCurrentStatus}</span></td>`;
             
             userDatesArray.forEach(date => {
                 const dateKey = formatDateKey(date);
@@ -478,7 +619,7 @@
                 html += `<td class="${info.class}"><input type="number" class="ot-input" value="${hours}" min="0" max="24" oninput="updateUserOT('${dateKey}', this.value)" ${isLocked ? 'disabled' : ''}></td>`;
             });
             
-            html += `<td class="total-col-15 text-center" id="user-total-15">-</td><td class="total-col-20 text-center" id="user-total-20">-</td><td class="total-col-30 text-center" id="user-total-30">-</td></tr>`;
+            html += `<td class="total-col-15 text-center fs-6" id="user-total-15">-</td><td class="total-col-20 text-center fs-6" id="user-total-20">-</td><td class="total-col-30 text-center fs-6" id="user-total-30">-</td></tr>`;
             tbody.innerHTML = html;
             recalcUserTotals();
         }
@@ -504,18 +645,22 @@
         }
 
         function saveUserOT() {
-            Swal.fire({ title: 'ยืนยันการส่งแผน OT?', text: 'ต้องกดปุ่มนี้เสมอข้อมูลถึงจะไปโชว์ที่หน้าแอดมิน!', icon: 'question', showCancelButton: true, confirmButtonText: 'บันทึกส่ง' }).then((result) => {
+            Swal.fire({ title: 'ยืนยันการส่งแผน OT?', text: 'หากส่งแล้ว ข้อมูลจะถูกอัปเดตไปยังระบบของ Admin ทันที', icon: 'question', showCancelButton: true, confirmButtonText: 'บันทึกส่ง', confirmButtonColor: '#a855f7', cancelButtonText: 'ยกเลิก' }).then((result) => {
                 if (result.isConfirmed) {
                     const monthVal = document.getElementById('userMonthSelector').value;
                     userCurrentStatus = 'Pending';
                     
                     if (IS_GAS) {
-                        Swal.fire({ title: 'กำลังบันทึกเข้าฐานข้อมูล...', didOpen: () => { Swal.showLoading(); } });
+                        Swal.fire({ title: 'กำลังบันทึกเข้าฐานข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                         google.script.run
                             .withSuccessHandler(res => {
                                 if(res.success) {
                                     Swal.fire('สำเร็จ!', 'ส่งแผน OT เรียบร้อยแล้ว (รอ Admin ตรวจสอบ)', 'success').then(() => renderUserSpreadsheet());
                                 } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+                            })
+                            .withFailureHandler(err => {
+                                Swal.close();
+                                Swal.fire('ระบบขัดข้อง', err.message, 'error');
                             })
                             .saveMonthlyOT(monthVal, String(currentUser.id), userCurrentOTData, 'Pending');
                     } else {
@@ -534,16 +679,50 @@
         // ==========================================
         let adminDatesArray = [];
 
+        function updatePositionDropdown() {
+            const posFilter = document.getElementById('positionFilter');
+            if(!posFilter) return;
+            const currentVal = posFilter.value;
+            
+            // ดึงตำแหน่งทั้งหมดที่ไม่ซ้ำกันจากรายชื่อพนักงานในระบบ
+            const positions = [...new Set(globalUsers.map(u => u.pos).filter(Boolean))].sort();
+            
+            let html = '<option value="all">ทุกตำแหน่ง</option>';
+            positions.forEach(pos => {
+                html += `<option value="${pos}">${pos}</option>`;
+            });
+            posFilter.innerHTML = html;
+            
+            if (positions.includes(currentVal)) {
+                posFilter.value = currentVal;
+            } else {
+                posFilter.value = 'all';
+            }
+        }
+
         function initAdminData() {
-            Swal.fire({ title: 'กำลังโหลดข้อมูลพนักงาน...', didOpen: () => { Swal.showLoading(); } });
+            Swal.fire({ title: 'กำลังโหลดข้อมูลพนักงาน...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             if (IS_GAS) {
                 google.script.run
                     .withSuccessHandler(res => {
-                        if(res.success) { globalUsers = res.data; changeAdminPeriod(); } 
+                        if(res.success) { 
+                            globalUsers = res.data; 
+                            updatePositionDropdown();
+                            changeAdminPeriod(); 
+                        } 
                         else { Swal.close(); Swal.fire('ผิดพลาด', res.message, 'error'); }
-                    }).getUsersList();
+                    })
+                    .withFailureHandler(err => {
+                        Swal.close();
+                        Swal.fire('ระบบขัดข้อง', 'โปรดตรวจสอบ Code.gs หรือคุณอาจจะยังไม่ได้ Deploy เป็นเวอร์ชันใหม่<br><br><b>Error:</b> ' + err.message, 'error');
+                    })
+                    .getUsersList();
             } else {
-                setTimeout(() => { Swal.close(); changeAdminPeriod(); }, 300);
+                setTimeout(() => { 
+                    Swal.close(); 
+                    updatePositionDropdown();
+                    changeAdminPeriod(); 
+                }, 300);
             }
         }
 
@@ -562,13 +741,18 @@
             while (current <= pEnd) { adminDatesArray.push(new Date(current)); current.setDate(current.getDate() + 1); }
             
             if (IS_GAS) {
-                Swal.fire({ title: 'กำลังโหลดแผนรายเดือน...', didOpen: () => { Swal.showLoading(); } });
+                Swal.fire({ title: 'กำลังโหลดแผนรายเดือน...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                 google.script.run
                     .withSuccessHandler(res => {
                         Swal.close();
                         if(res.success) { monthlyData = res.data || {}; renderAdminHeaders(); filterSpreadsheet(); } 
                         else { Swal.fire('ผิดพลาด', res.message, 'error'); }
-                    }).getMonthlyOT(val);
+                    })
+                    .withFailureHandler(err => {
+                        Swal.close();
+                        Swal.fire('ระบบขัดข้อง', err.message, 'error');
+                    })
+                    .getMonthlyOT(val);
             } else {
                 monthlyData = monthlyDataStore[val] ? JSON.parse(JSON.stringify(monthlyDataStore[val])) : {};
                 renderAdminHeaders();
@@ -578,20 +762,21 @@
 
         function renderAdminHeaders() {
             const thead = document.getElementById('ssHeader');
-            let row1 = '<tr><th rowspan="2" class="sticky-col-1">จัดเรียง</th><th rowspan="2" class="sticky-col-2">Code</th><th rowspan="2" class="sticky-col-3">Name / Position</th><th rowspan="2" class="sticky-col-4">การอนุมัติ / บันทึกแก้</th>';
+            let row1 = '<tr><th rowspan="2" class="sticky-col-1 text-center">จัดเรียง</th><th rowspan="2" class="sticky-col-2 text-center">Code</th><th rowspan="2" class="sticky-col-3">Name / Position</th><th rowspan="2" class="sticky-col-4 text-center">การอนุมัติ / บันทึกแก้</th>';
             let row2 = '<tr>';
             adminDatesArray.forEach(date => {
                 const info = getDayClassInfo(date);
                 row1 += `<th class="ot-cell ${info.class}">${getDayName(date)}</th>`;
                 row2 += `<th class="ot-cell ${info.class}">${date.getDate()}</th>`;
             });
-            row1 += `<th rowspan="2" class="total-col-15">T *1.5</th><th rowspan="2" class="total-col-20">T *2</th><th rowspan="2" class="total-col-30">T *3</th></tr>`;
+            row1 += `<th rowspan="2" class="total-col-15 text-center">T *1.5</th><th rowspan="2" class="total-col-20 text-center">T *2</th><th rowspan="2" class="total-col-30 text-center">T *3</th></tr>`;
             thead.innerHTML = row1 + row2 + '</tr>';
         }
 
         function filterSpreadsheet() {
             const text = document.getElementById('searchEmp').value.toLowerCase();
             const statusF = document.getElementById('statusFilter').value;
+            const posF = document.getElementById('positionFilter').value;
             const tbody = document.getElementById('ssBody');
             let html = '';
             
@@ -603,30 +788,33 @@
                 
                 const matchText = String(user.id).toLowerCase().includes(text) || user.name.toLowerCase().includes(text);
                 const matchStatus = statusF === 'all' || monthInfo.status === statusF;
+                const matchPos = posF === 'all' || user.pos === posF;
                 
-                if (matchText && matchStatus) {
+                if (matchText && matchStatus && matchPos) {
                     const { t15, t20, t30 } = calcTotals(monthInfo.otData, adminDatesArray);
                     
                     const selPen = monthInfo.status === 'Pending' ? 'selected' : '';
                     const selApp = monthInfo.status === 'Approved' ? 'selected' : '';
                     const selRej = monthInfo.status === 'Not Approve' ? 'selected' : '';
-                    let badgeColor = monthInfo.status === 'Approved' ? 'bg-success' : (monthInfo.status === 'Not Approve' ? 'bg-danger' : 'bg-warning text-dark');
 
                     html += `<tr>
                         <td class="sticky-col-1 text-muted">
-                            <div class="d-flex justify-content-between align-items-center px-1"><span>${rowCount++}</span>
-                                <div class="d-flex flex-column"><i class="fa-solid fa-caret-up cursor-pointer text-secondary" onclick="moveUser(${index}, -1)"></i><i class="fa-solid fa-caret-down cursor-pointer text-secondary" onclick="moveUser(${index}, 1)"></i></div>
+                            <div class="d-flex justify-content-between align-items-center px-1"><span class="fw-bold">${rowCount++}</span>
+                                <div class="d-flex flex-column ms-2">
+                                    <i class="fa-solid fa-caret-up cursor-pointer text-blue-custom" onclick="moveUser(${index}, -1)"></i>
+                                    <i class="fa-solid fa-caret-down cursor-pointer text-blue-custom" onclick="moveUser(${index}, 1)"></i>
+                                </div>
                             </div>
                         </td>
-                        <td class="sticky-col-2 fw-bold text-primary text-center">${user.id}</td>
+                        <td class="sticky-col-2 fw-bold text-blue-custom text-center">${user.id}</td>
                         <td class="sticky-col-3 text-start"><div class="fw-bold">${user.name}</div><div class="text-muted" style="font-size: 0.75em;">${user.pos}</div></td>
                         <td class="sticky-col-4 text-center">
-                            <select class="form-select form-select-sm mb-1" style="font-size: 0.8em; font-weight: bold;" onchange="updateAdminStatus('${user.id}', this.value)">
+                            <select class="form-select form-select-sm mb-2" style="font-size: 0.8em; font-weight: bold; border-color: #cbd5e1;" onchange="updateAdminStatus('${user.id}', this.value)">
                                 <option value="Pending" ${selPen}>⏳ รอพิจารณา</option>
                                 <option value="Approved" ${selApp}>✅ อนุมัติแล้ว</option>
                                 <option value="Not Approve" ${selRej}>❌ ไม่อนุมัติ</option>
                             </select>
-                            <button class="btn btn-sm btn-outline-primary w-100 mb-1" style="font-size: 0.8em;" onclick="saveAdminRowOT('${user.id}')"><i class="fa-solid fa-floppy-disk"></i> บันทึกแก้ OT</button>
+                            <button class="btn btn-sm btn-outline-theme w-100 rounded-pill" style="font-size: 0.75em;" onclick="saveAdminRowOT('${user.id}')"><i class="fa-solid fa-floppy-disk"></i> บันทึกแก้ OT</button>
                         </td>`;
                     
                     adminDatesArray.forEach(date => {
@@ -638,9 +826,9 @@
                                  </td>`;
                     });
                     
-                    html += `<td class="total-col-15 text-center" id="t15-${user.id}">${t15 > 0 ? t15 : '-'}</td>
-                             <td class="total-col-20 text-center" id="t20-${user.id}">${t20 > 0 ? t20 : '-'}</td>
-                             <td class="total-col-30 text-center" id="t30-${user.id}">${t30 > 0 ? t30 : '-'}</td></tr>`;
+                    html += `<td class="total-col-15 text-center fs-6" id="t15-${user.id}">${t15 > 0 ? t15 : '-'}</td>
+                             <td class="total-col-20 text-center fs-6" id="t20-${user.id}">${t20 > 0 ? t20 : '-'}</td>
+                             <td class="total-col-30 text-center fs-6" id="t30-${user.id}">${t30 > 0 ? t30 : '-'}</td></tr>`;
                 }
             });
             if(html === '') html = `<tr><td colspan="${4 + adminDatesArray.length + 3}" class="text-center py-5 text-danger"><h5>ไม่พบข้อมูลผู้ลงทะเบียน</h5><p class="text-muted">พนักงานต้องสมัครสมาชิก ข้อมูลถึงจะมาแสดงที่นี่</p></td></tr>`;
@@ -706,17 +894,213 @@
 
         function saveSortOrder() {
             if (IS_GAS) {
-                Swal.fire({ title: 'กำลังบันทึกลำดับ...', didOpen: () => { Swal.showLoading(); } });
+                Swal.fire({ title: 'กำลังบันทึกลำดับ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                 google.script.run
                     .withSuccessHandler(res => {
                         if(res.success) Swal.fire('บันทึกลำดับสำเร็จ!', 'ระบบจดจำการจัดเรียงพนักงานของคุณแล้ว', 'success');
                         else Swal.fire('ผิดพลาด', res.message, 'error');
                     })
+                    .withFailureHandler(err => {
+                        Swal.close();
+                        Swal.fire('ระบบขัดข้อง', err.message, 'error');
+                    })
                     .updateUsersInfo(globalUsers);
             } else { Swal.fire('บันทึกลำดับสำเร็จ!', 'ระบบจดจำการจัดเรียงพนักงานของคุณแล้ว', 'success'); }
         }
 
-        function exportExcel() { Swal.fire('Coming Soon', 'ดาวน์โหลด Excel', 'info'); }
+        // ==========================================
+        // EXPORT TO EXCEL WITH EXCELJS (100% Styling Support)
+        // ==========================================
+        function exportExcel() {
+            if (typeof ExcelJS === 'undefined') {
+                Swal.fire('ข้อผิดพลาด', 'ระบบกำลังโหลดไลบรารี Excel กรุณารอสักครู่', 'warning');
+                return;
+            }
+
+            Swal.fire({ title: 'กำลังเตรียมไฟล์ Excel...', didOpen: () => { Swal.showLoading(); } });
+
+            // ใช้ setTimeout เพื่อให้ UI โชว์ Loading ก่อนที่จะทำการคำนวณหนักๆ
+            setTimeout(() => {
+                try {
+                    // 1. สร้างสมุดงาน (Workbook) และแผ่นงาน (Worksheet)
+                    const workbook = new ExcelJS.Workbook();
+                    const sheet = workbook.addWorksheet('OT Plan', {
+                        views: [{ state: 'frozen', xSplit: 5, ySplit: 2 }] // แช่แข็งคอลัมน์และแถวหัวตาราง
+                    });
+
+                    // 2. กำหนดสไตล์ที่ใช้ซ้ำๆ
+                    const fontPrompt = { name: 'Prompt', size: 10 };
+                    const borderAll = {
+                        top: {style:'thin', color:{argb:'FFCBD5E1'}},
+                        left: {style:'thin', color:{argb:'FFCBD5E1'}},
+                        bottom: {style:'thin', color:{argb:'FFCBD5E1'}},
+                        right: {style:'thin', color:{argb:'FFCBD5E1'}}
+                    };
+                    const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+
+                    // 3. เตรียมข้อมูลส่วนหัวตาราง (Headers)
+                    const row1 = ['ลำดับ', 'Code', 'ชื่อ - นามสกุล', 'ตำแหน่ง', 'สถานะ'];
+                    const row2 = ['', '', '', '', ''];
+
+                    adminDatesArray.forEach(date => {
+                        row1.push(getDayName(date));
+                        row2.push(date.getDate());
+                    });
+
+                    row1.push('T *1.5', 'T *2', 'T *3');
+                    row2.push('', '', '');
+
+                    sheet.addRow(row1);
+                    sheet.addRow(row2);
+
+                    // 4. จัดรูปแบบและผสานเซลล์ (Merge Cells) หัวตารางด้านซ้าย
+                    const colsToMerge = ['A', 'B', 'C', 'D', 'E'];
+                    colsToMerge.forEach((col) => {
+                        sheet.mergeCells(`${col}1:${col}2`);
+                        const cell = sheet.getCell(`${col}1`);
+                        cell.font = { ...fontPrompt, bold: true, color: {argb: 'FF475569'} };
+                        cell.fill = headerFill;
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                        cell.border = borderAll;
+                    });
+
+                    // 5. จัดรูปแบบหัวตารางส่วนของวันที่ (เปลี่ยนสีวันหยุด)
+                    let colIdx = 6;
+                    adminDatesArray.forEach((date) => {
+                        const info = getDayClassInfo(date);
+                        const cell1 = sheet.getRow(1).getCell(colIdx);
+                        const cell2 = sheet.getRow(2).getCell(colIdx);
+                        
+                        let bg = 'FFF8FAFC';
+                        let fg = 'FF475569';
+                        if (info.isHoliday) { bg = 'FFFECDD3'; fg = 'FF9F1239'; } // สีวันหยุดนักขัตฤกษ์
+                        else if (info.class.includes('bg-weekend')) { bg = 'FFFEF08A'; fg = 'FF854D0E'; } // สีเสาร์-อาทิตย์
+                        
+                        [cell1, cell2].forEach(c => {
+                            c.font = { ...fontPrompt, bold: true, color: { argb: fg } };
+                            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                            c.alignment = { horizontal: 'center', vertical: 'middle' };
+                            c.border = borderAll;
+                        });
+                        colIdx++;
+                    });
+
+                    // 6. จัดรูปแบบหัวตารางส่วนผลรวม OT
+                    const totalStyles = [
+                        { bg: 'FFE0E7FF', fg: 'FF6366F1' }, // T1.5
+                        { bg: 'FFF3E8FF', fg: 'FFA855F7' }, // T2.0
+                        { bg: 'FFFFE4E6', fg: 'FFE11D48' }  // T3.0
+                    ];
+                    totalStyles.forEach((style, i) => {
+                        const c = colIdx + i;
+                        sheet.mergeCells(1, c, 2, c); // ผสานเซลล์แถว 1 และ 2
+                        const cell = sheet.getRow(1).getCell(c);
+                        cell.font = { ...fontPrompt, bold: true, color: { argb: style.fg } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.bg } };
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                        cell.border = borderAll;
+                    });
+
+                    // 7. ดึงข้อมูลพนักงานและใส่ลงในตาราง (ตามตัวกรอง)
+                    const text = document.getElementById('searchEmp').value.toLowerCase();
+                    const statusF = document.getElementById('statusFilter').value;
+                    const posF = document.getElementById('positionFilter').value;
+
+                    let rowCount = 1;
+                    globalUsers.forEach(user => {
+                        const monthInfo = monthlyData[String(user.id)] || { status: 'Pending', otData: {} };
+                        const matchText = String(user.id).toLowerCase().includes(text) || user.name.toLowerCase().includes(text);
+                        const matchStatus = statusF === 'all' || monthInfo.status === statusF;
+                        const matchPos = posF === 'all' || user.pos === posF;
+
+                        if (matchText && matchStatus && matchPos) {
+                            const { t15, t20, t30 } = calcTotals(monthInfo.otData, adminDatesArray);
+                            
+                            let statusTH = 'รอพิจารณา'; let statColor = 'FFB45309'; // สีส้ม
+                            if (monthInfo.status === 'Approved') { statusTH = 'อนุมัติแล้ว'; statColor = 'FF15803D'; } // สีเขียว
+                            if (monthInfo.status === 'Not Approve') { statusTH = 'ไม่อนุมัติ'; statColor = 'FFB91C1C'; } // สีแดง
+
+                            const rData = [ rowCount++, user.id, user.name, user.pos || '', statusTH ];
+                            
+                            adminDatesArray.forEach(date => {
+                                const val = monthInfo.otData[formatDateKey(date)];
+                                rData.push(val ? parseFloat(val) : '');
+                            });
+                            
+                            rData.push(t15 > 0 ? t15 : '', t20 > 0 ? t20 : '', t30 > 0 ? t30 : '');
+                            const dataRow = sheet.addRow(rData);
+
+                            // 8. จัดสไตล์ข้อมูลแต่ละบรรทัดให้สวยงาม
+                            dataRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                                cell.font = fontPrompt;
+                                cell.border = borderAll;
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                                
+                                // แต่งสีพิเศษตามคอลัมน์
+                                if (colNumber === 2) { cell.font = { ...fontPrompt, bold: true, color: {argb:'FF6366F1'} }; } // Code
+                                if (colNumber === 3) { cell.alignment = { horizontal: 'left', vertical: 'middle' }; cell.font = {...fontPrompt, bold: true}; } // ชื่อ
+                                if (colNumber === 4) { cell.alignment = { horizontal: 'left', vertical: 'middle' }; cell.font = {...fontPrompt, color:{argb:'FF64748B'}}; } // ตำแหน่ง
+                                if (colNumber === 5) { cell.font = { ...fontPrompt, bold: true, color: {argb: statColor} }; } // สถานะ
+                                
+                                // ใส่สีพื้นหลังให้ช่องวันที่ตรงกับวันหยุด
+                                if (colNumber > 5 && colNumber <= 5 + adminDatesArray.length) {
+                                    const info = getDayClassInfo(adminDatesArray[colNumber - 6]);
+                                    if (info.isHoliday) { 
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECDD3' } }; 
+                                        cell.font = {...fontPrompt, color:{argb:'FF9F1239'}}; 
+                                    }
+                                    else if (info.class.includes('bg-weekend')) { 
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } }; 
+                                        cell.font = {...fontPrompt, color:{argb:'FF854D0E'}}; 
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    // 9. ปรับความกว้างคอลัมน์ให้พอดี
+                    sheet.getColumn(1).width = 8;
+                    sheet.getColumn(2).width = 12;
+                    sheet.getColumn(3).width = 25;
+                    sheet.getColumn(4).width = 20;
+                    sheet.getColumn(5).width = 15;
+                    for (let i = 1; i <= adminDatesArray.length; i++) { sheet.getColumn(5 + i).width = 6; }
+                    sheet.getColumn(5 + adminDatesArray.length + 1).width = 8;
+                    sheet.getColumn(5 + adminDatesArray.length + 2).width = 8;
+                    sheet.getColumn(5 + adminDatesArray.length + 3).width = 8;
+
+                    // 10. แปลงไฟล์และดาวน์โหลดโดยใช้ Promise แทน async/await (แก้บัค regeneratorRuntime)
+                    workbook.xlsx.writeBuffer().then(buffer => {
+                        const periodVal = document.getElementById('monthSelector').value;
+                        const fileName = `OT_Plan_${periodVal}.xlsx`;
+                        
+                        // แปลง buffer เป็น Blob
+                        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        
+                        // สร้าง Object URL และลิงก์ชั่วคราวเพื่อสั่งดาวน์โหลด
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        
+                        // คืนค่าหน่วยความจำและลบแท็ก
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        Swal.close();
+                    }).catch(err => {
+                        console.error(err);
+                        Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างไฟล์ Excel ได้: ' + err.message, 'error');
+                    });
+
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดระหว่างเตรียมข้อมูล: ' + err.message, 'error');
+                }
+            }, 100);
+        }
     </script>
 </body>
 </html>
